@@ -32,6 +32,7 @@ else:
     import os
     import supervisor
     import synthio
+    import sys
 
     try:
         import launcher_config
@@ -186,20 +187,22 @@ MAZE_DATA = [
 # INPUT SETUP
 # =============================================================================
 
-UP = DigitalInOut(board.SWITCH_UP)
-UP.switch_to_input(pull=Pull.UP)
-DOWN = DigitalInOut(board.SWITCH_DOWN)
-DOWN.switch_to_input(pull=Pull.UP)
-LEFT = DigitalInOut(board.SWITCH_LEFT)
-LEFT.switch_to_input(pull=Pull.UP)
-RIGHT = DigitalInOut(board.SWITCH_RIGHT)
-RIGHT.switch_to_input(pull=Pull.UP)
-PRESS = DigitalInOut(board.SWITCH_PRESS)
-PRESS.switch_to_input(pull=Pull.UP)
+if DEVICE is WIO:
+    UP = DigitalInOut(board.SWITCH_UP)
+    UP.switch_to_input(pull=Pull.UP)
+    DOWN = DigitalInOut(board.SWITCH_DOWN)
+    DOWN.switch_to_input(pull=Pull.UP)
+    LEFT = DigitalInOut(board.SWITCH_LEFT)
+    LEFT.switch_to_input(pull=Pull.UP)
+    RIGHT = DigitalInOut(board.SWITCH_RIGHT)
+    RIGHT.switch_to_input(pull=Pull.UP)
+    PRESS = DigitalInOut(board.SWITCH_PRESS)
+    PRESS.switch_to_input(pull=Pull.UP)
 
-# Sound toggle button (Button 1 on top of device)
-BUTTON_1 = DigitalInOut(board.BUTTON_1)
-BUTTON_1.switch_to_input(pull=Pull.UP)
+    # Sound toggle button (Button 1 on top of device)
+    BUTTON_1 = DigitalInOut(board.BUTTON_1)
+    BUTTON_1.switch_to_input(pull=Pull.UP)
+    last_button_state = True  # True = not pressed
 
 # =============================================================================
 # SOUND SETUP
@@ -351,11 +354,17 @@ def play_startup_jingle():
     
     stop_sound()
 
+def toggle_sound():
+    sound_enabled = not sound_enabled
+    print(f"Sound: {'ON' if sound_enabled else 'OFF'}")
+    if not sound_enabled:
+        stop_sound()
+
 # =============================================================================
 # DISPLAY SETUP
 # =============================================================================
 
-if DEVICE is DEVICE_FRUIT_JAM:
+if DEVICE is FRUIT_JAM:
     # setup display
     adafruit_fruitjam.peripherals.request_display_config(SCREEN_WIDTH, SCREEN_HEIGHT)
     display = supervisor.runtime.display
@@ -1776,7 +1785,7 @@ print(f"Lives: {lives}, Level: {level}")
 # INPUT HANDLING
 # =============================================================================
 
-def read_input():
+def read_input(keys=None):
     """Read joystick and queue direction.
     
     Remapped for 270° screen rotation (USB port on left):
@@ -1785,16 +1794,16 @@ def read_input():
     Physical LEFT -> Game UP
     Physical RIGHT -> Game DOWN
     """
-    if not UP.value:
+    if (DEVICE is WIO and not UP.value) or (DEVICE is FRUIT_JAM and ("d" in keys or "\x1b[C" in keys)):
         pacman.next_direction = DIR_RIGHT
         # print("UP pressed -> RIGHT")
-    elif not DOWN.value:
+    elif (DEVICE is WIO and not DOWN.value) or (DEVICE is FRUIT_JAM and ("a" in keys or "\x1b[D" in keys)):
         pacman.next_direction = DIR_LEFT
         # print("DOWN pressed -> LEFT")
-    elif not LEFT.value:
+    elif (DEVICE is WIO and not LEFT.value) or (DEVICE is FRUIT_JAM and ("w" in keys or "\x1b[A" in keys)):
         pacman.next_direction = DIR_UP
         # print("LEFT pressed -> UP")
-    elif not RIGHT.value:
+    elif (DEVICE is WIO and not RIGHT.value) or (DEVICE is FRUIT_JAM and ("s" in keys or "\x1b[B" in keys)):
         pacman.next_direction = DIR_DOWN
         # print("RIGHT pressed -> DOWN")
 
@@ -1834,15 +1843,28 @@ time.sleep(0.5)
 
 while True:
     start_time = time.monotonic()
-    
-    # Check sound toggle button (Button 1)
-    button_state = BUTTON_1.value
-    if not button_state and last_button_state:  # Button just pressed
-        sound_enabled = not sound_enabled
-        print(f"Sound: {'ON' if sound_enabled else 'OFF'}")
-        if not sound_enabled:
-            stop_sound()
-    last_button_state = button_state
+
+    if DEVICE is FRUIT_JAM:
+        # extract keys from input buffer
+        keys = []
+        if (available := supervisor.runtime.serial_bytes_available) > 0:
+            buffer = sys.stdin.read(available)
+            while buffer:
+                key = buffer[0]
+                buffer = buffer[1:]
+                if key == "\x1b" and buffer and buffer[0] == "[" and len(buffer) > 2:
+                    key += buffer[:2]
+                    buffer = buffer[2:]
+                keys.append(key)
+
+    if DEVICE is WIO:
+        # Check sound toggle button (Button 1)
+        button_state = BUTTON_1.value
+        if not button_state and last_button_state:  # Button just pressed
+            toggle_sound()
+        last_button_state = button_state
+    elif DEVICE is FRUIT_JAM and "z" in keys:
+        toggle_sound()
     
     if game_state == STATE_PLAY:
         # Update Mode
@@ -1872,7 +1894,7 @@ while True:
                         if not g.in_house:
                             g.reverse_pending = True
 
-        read_input()
+        read_input(keys)
         pacman.update()
         
         # Update ghosts
@@ -2113,7 +2135,7 @@ while True:
 
     elif game_state == STATE_GAME_OVER:
         # Wait for any button press to restart
-        if not PRESS.value or not UP.value or not DOWN.value or not LEFT.value or not RIGHT.value:
+        if (DEVICE is WIO and (not PRESS.value or not UP.value or not DOWN.value or not LEFT.value or not RIGHT.value)) or (DEVICE is FRUIT_JAM and len(keys) > 0):
             # Hide GAME OVER
             if game_over_label:
                 game_over_label.hidden = True
