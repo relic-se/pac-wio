@@ -12,11 +12,32 @@ import random
 from digitalio import DigitalInOut, Pull
 import terminalio
 import pwmio
+from micropython import const
 try:
     from adafruit_bitmap_font import bitmap_font
     from adafruit_display_text import label
 except ImportError:
     pass
+
+DEVICE_WIO = const(0)
+DEVICE_FRUIT_JAM = const(1)
+
+try:
+    import adafruit_fruitjam
+except ImportError:
+    DEVICE = DEVICE_WIO
+else:
+    DEVICE = DEVICE_FRUIT_JAM
+
+    import os
+    import supervisor
+    import synthio
+
+    try:
+        import launcher_config
+        config = launcher_config.LauncherConfig()
+    except ImportError:
+        config = None
 
 # =============================================================================
 # CONSTANTS
