@@ -3,6 +3,18 @@ Pac-Man Clone for Seeed Wio Terminal
 CircuitPython 10.0.3
 """
 
+# load included modules if we aren't installed on the root path
+if len(__file__.split("/")[:-1]) > 1:
+    lib_path = "/".join(__file__.split("/")[:-1]) + "/lib"
+    try:
+        import os
+        os.stat(lib_path)
+    except:
+        pass
+    else:
+        import sys
+        sys.path.append(lib_path)
+
 import board
 import displayio
 import gc
