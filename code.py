@@ -1635,70 +1635,43 @@ last_score = -1
 high_score = 10000
 last_high_score = -1
 
-try:
-    # Check if libraries were imported successfully
-    if 'bitmap_font' in globals() and 'label' in globals():
-        font = bitmap_font.load_font("fonts/press_start_2p.bdf")
-        
+if "label" in globals():
+    try:
+        FONT = bitmap_font.load_font("fonts/press_start_2p.bdf") if "bitmap_font" in globals() else terminalio.FONT
+
         # 1UP Label (Top Left)
-        one_up_label = label.Label(font, text="1UP", color=0xFFFFFF)
+        one_up_label = label.Label(FONT, text="1UP", color=0xFFFFFF)
         one_up_label.x = 8
         one_up_label.y = 8
+        main_group.append(one_up_label)
         
         # Score Label (Below 1UP)
-        score_label = label.Label(font, text="00", color=0xFFFFFF)
+        score_label = label.Label(FONT, text="0" * (2 if "bitmap_font" in globals() else 1), color=0xFFFFFF)
         score_label.x = 8
         score_label.y = 24
+        main_group.append(score_label)
         
         # High Score Title (Top Center)
-        high_score_title_label = label.Label(font, text="HIGH SCORE", color=0xFFFFFF)
-        high_score_title_label.x = 72  # Center: (240 - 80) / 2 = 80, adjust for text width
-        high_score_title_label.y = 8
+        high_score_title_label = label.Label(FONT, text="HIGH SCORE", color=0xFFFFFF)
+        high_score_title_label.anchor_point = (0.5, 0.0)
+        high_score_title_label.anchored_position = (DISPLAY_WIDTH // 2, 8)
+        main_group.append(high_score_title_label)
         
         # High Score Value (Below Title)
-        high_score_label = label.Label(font, text=f"{high_score}", color=0xFFFFFF)
-        high_score_label.x = 96  # Centered under HIGH SCORE
-        high_score_label.y = 24
+        high_score_label = label.Label(FONT, text=str(high_score), color=0xFFFFFF)
+        high_score_label.anchor_point = (0.5, 0.0)
+        high_score_label.anchored_position = (DISPLAY_WIDTH // 2, 24)
+        main_group.append(high_score_label)
         
         # GAME OVER Label (centered, hidden initially)
-        game_over_label = label.Label(font, text="GAME  OVER", color=0xFF0000)
-        game_over_label.x = 64  # Centered on 240px screen
-        game_over_label.y = 160  # Middle of screen
+        game_over_label = label.Label(FONT, text="GAME  OVER", color=0xFF0000)
+        game_over_label.anchor_point = (0.5, 0.5)
+        game_over_label.anchored_position = (DISPLAY_WIDTH // 2, DISPLAY_HEIGHT // 2)
         game_over_label.hidden = True
-        
-    elif 'terminalio' in globals() and 'label' in globals():
-        print("Using terminalio font")
-        font = terminalio.FONT
-        
-        one_up_label = label.Label(font, text="1UP", color=0xFFFFFF)
-        one_up_label.x = 8
-        one_up_label.y = 8
-        
-        score_label = label.Label(font, text="0", color=0xFFFFFF)
-        score_label.x = 8
-        score_label.y = 24
-        
-        high_score_title_label = label.Label(font, text="HIGH SCORE", color=0xFFFFFF)
-        high_score_title_label.x = 72
-        high_score_title_label.y = 8
-        
-        high_score_label = label.Label(font, text=f"{high_score}", color=0xFFFFFF)
-        high_score_label.x = 96
-        high_score_label.y = 24
+        main_group.append(game_over_label)
 
-except Exception as e:
-    print(f"Scoreboard error: {e}")
-
-if one_up_label:
-    main_group.append(one_up_label)
-if score_label:
-    main_group.append(score_label)
-if high_score_title_label:
-    main_group.append(high_score_title_label)
-if high_score_label:
-    main_group.append(high_score_label)
-if game_over_label:
-    main_group.append(game_over_label)
+    except Exception as e:
+        print(f"Scoreboard error: {e}")
 
 # =============================================================================
 # LIVES AND FRUIT DISPLAY
