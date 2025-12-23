@@ -47,6 +47,12 @@ if os.uname().machine.startswith("Adafruit Fruit Jam"):
         import synthio
         import sys
 
+        # using imageload for better performance with more RAM consumption
+        try:
+            import adafruit_imageload
+        except ImportError:
+            pass
+
         try:
             import launcher_config
             config = launcher_config.LauncherConfig()
@@ -402,11 +408,15 @@ display.root_group = main_group
 # LOAD MAZE BACKGROUND
 # =============================================================================
 
-# Load the empty maze (no dots) using OnDiskBitmap to save RAM
-# We keep the file open for the duration of the program
-maze_file = open("images/maze_empty.bmp", "rb")
-maze_bmp = displayio.OnDiskBitmap(maze_file)
-maze_palette = maze_bmp.pixel_shader
+# Load the empty maze (no dots)
+if "adafruit_imageload" in globals():
+    maze_bmp, maze_palette = adafruit_imageload.load("images/maze_empty.bmp")
+else:
+    # using OnDiskBitmap to save RAM
+    # We keep the file open for the duration of the program
+    maze_file = open("images/maze_empty.bmp", "rb")
+    maze_bmp = displayio.OnDiskBitmap(maze_file)
+    maze_palette = maze_bmp.pixel_shader
 
 # Create maze background as TileGrid
 maze_bg = displayio.TileGrid(
@@ -562,9 +572,12 @@ gc.collect()
 # LOAD SPRITE SHEET
 # =============================================================================
 
-# Use OnDiskBitmap to save RAM and avoid allocation issues
-sprite_sheet = displayio.OnDiskBitmap("images/sprites.bmp")
-sprite_palette = sprite_sheet.pixel_shader
+if "adafruit_imageload" in globals():
+    sprite_sheet, sprite_palette = adafruit_imageload.load("images/sprites.bmp")
+else:
+    # Use OnDiskBitmap to save RAM and avoid allocation issues
+    sprite_sheet = displayio.OnDiskBitmap("images/sprites.bmp")
+    sprite_palette = sprite_sheet.pixel_shader
 
 print(f"Sprite Sheet Dimensions: {sprite_sheet.width}x{sprite_sheet.height}")
 
