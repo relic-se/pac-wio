@@ -1873,7 +1873,7 @@ while True:
             while buffer:
                 key = buffer[0]
                 buffer = buffer[1:]
-                if key == "\x1b" and buffer and buffer[0] == "[" and len(buffer) > 2:
+                if key == "\x1b" and buffer and buffer[0] == "[" and len(buffer) >= 2:
                     key += buffer[:2]
                     buffer = buffer[2:]
                 keys.append(key)
