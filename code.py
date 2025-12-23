@@ -5,7 +5,6 @@ CircuitPython 10.0.3
 
 import board
 import displayio
-# import adafruit_imageload
 import gc
 import time
 import random
