@@ -205,78 +205,92 @@ BUTTON_1.switch_to_input(pull=Pull.UP)
 # SOUND SETUP
 # =============================================================================
 
-# Wio Terminal buzzer is on pin BUZZER (or D0 on some builds)
-try:
-    buzzer = pwmio.PWMOut(board.BUZZER, variable_frequency=True)
-except AttributeError:
-    # Fallback if BUZZER pin not defined
+if DEVICE is DEVICE_FRUIT_JAM:
+    peripherals = adafruit_fruitjam.peripherals.Peripherals(
+        safe_volume_limit=(config.audio_volume_override_danger if config is not None else 0.75),
+    )
+    synth = synthio.Synthesizer(
+        sample_rate=peripherals.dac.sample_rate,
+        channel_count=1,
+    )
+    peripherals.audio.play(synth)
+else:
+    # Wio Terminal buzzer is on pin BUZZER (or D0 on some builds)
     try:
-        buzzer = pwmio.PWMOut(board.D0, variable_frequency=True)
-    except:
-        buzzer = None
-        print("No buzzer available")
+        buzzer = pwmio.PWMOut(board.BUZZER, variable_frequency=True)
+    except AttributeError:
+        # Fallback if BUZZER pin not defined
+        try:
+            buzzer = pwmio.PWMOut(board.D0, variable_frequency=True)
+        except:
+            buzzer = None
+            print("No buzzer available")
 
 sound_enabled = True
-last_button_state = True  # True = not pressed
 
 # Pac-Man waka frequencies (alternating)
 WAKA_FREQ_1 = 261  # C4
 WAKA_FREQ_2 = 392  # G4
 waka_toggle = False
 
+def play_sound(freq:int):
+    if DEVICE is DEVICE_FRUIT_JAM:
+        synth.release_all_then_press(synthio.Note(frequency=freq))
+    elif buzzer is not None:
+        buzzer.frequency = freq
+        buzzer.duty_cycle = 32768  # 50% duty cycle
+
+def stop_sound():
+    """Stop any sound."""
+    if DEVICE is DEVICE_FRUIT_JAM:
+        synth.release_all()
+    elif buzzer is not None:
+        buzzer.duty_cycle = 0
+
 def play_waka():
     """Play the waka sound effect."""
     global waka_toggle
-    if not sound_enabled or buzzer is None:
+    if not sound_enabled:
         return
     
     freq = WAKA_FREQ_2 if waka_toggle else WAKA_FREQ_1
     waka_toggle = not waka_toggle
     
-    buzzer.frequency = freq
-    buzzer.duty_cycle = 32768  # 50% duty cycle
-
-def stop_sound():
-    """Stop any sound."""
-    if buzzer is not None:
-        buzzer.duty_cycle = 0
+    play_sound(freq)
 
 def play_death_sound():
     """Play death sound effect (blocking version - not used during animation)."""
-    if not sound_enabled or buzzer is None:
+    if not sound_enabled:
         return
     # Descending tone
     for freq in range(400, 100, -30):
-        buzzer.frequency = freq
-        buzzer.duty_cycle = 32768
+        play_sound(freq)
         time.sleep(0.05)
-    buzzer.duty_cycle = 0
+    stop_sound()
 
 def play_death_note(frame_idx):
     """Play a single death note based on animation frame."""
-    if not sound_enabled or buzzer is None:
+    if not sound_enabled:
         return
     # 11 death frames, descend from 500Hz to 100Hz
     freq = 500 - (frame_idx * 35)
     if freq < 100:
         freq = 100
-    buzzer.frequency = freq
-    buzzer.duty_cycle = 32768
+    play_sound(freq)
 
 def play_eat_ghost_sound():
     """Play ghost eating sound."""
-    if not sound_enabled or buzzer is None:
+    if not sound_enabled:
         return
     # Quick ascending tone
     for freq in range(200, 800, 100):
-        buzzer.frequency = freq
-        buzzer.duty_cycle = 32768
+        play_sound(freq)
         time.sleep(0.02)
-    buzzer.duty_cycle = 0
+    stop_sound()
 
 def play_startup_jingle():
     """Play the Pac-Man startup jingle."""
-    if not sound_enabled or buzzer is None:
+    if not sound_enabled:
         return
     
     # Pac-Man Intro Theme
@@ -330,13 +344,12 @@ def play_startup_jingle():
     ]
 
     for freq, duration in melody:
-        buzzer.frequency = freq
-        buzzer.duty_cycle = 32768
+        play_sound(freq)
         time.sleep(duration)
-        buzzer.duty_cycle = 0
+        stop_sound()
         time.sleep(0.02)  # Brief gap between notes
     
-    buzzer.duty_cycle = 0
+    stop_sound()
 
 # =============================================================================
 # DISPLAY SETUP
