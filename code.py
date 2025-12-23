@@ -12,6 +12,7 @@ import random
 from digitalio import DigitalInOut, Pull
 import terminalio
 import pwmio
+import os
 from micropython import const
 try:
     from adafruit_bitmap_font import bitmap_font
@@ -22,23 +23,24 @@ except ImportError:
 WIO = const(0)
 FRUIT_JAM = const(1)
 
-try:
-    import adafruit_fruitjam
-except ImportError:
-    DEVICE = WIO
-else:
-    DEVICE = FRUIT_JAM
-
-    import os
-    import supervisor
-    import synthio
-    import sys
-
+DEVICE = WIO
+if os.uname().machine.startswith("Adafruit Fruit Jam"):
     try:
-        import launcher_config
-        config = launcher_config.LauncherConfig()
+        import adafruit_fruitjam
     except ImportError:
-        config = None
+        pass
+    else:
+        DEVICE = FRUIT_JAM
+
+        import supervisor
+        import synthio
+        import sys
+
+        try:
+            import launcher_config
+            config = launcher_config.LauncherConfig()
+        except ImportError:
+            config = None
 
 # =============================================================================
 # CONSTANTS
