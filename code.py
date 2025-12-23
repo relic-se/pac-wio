@@ -19,15 +19,15 @@ try:
 except ImportError:
     pass
 
-DEVICE_WIO = const(0)
-DEVICE_FRUIT_JAM = const(1)
+WIO = const(0)
+FRUIT_JAM = const(1)
 
 try:
     import adafruit_fruitjam
 except ImportError:
-    DEVICE = DEVICE_WIO
+    DEVICE = WIO
 else:
-    DEVICE = DEVICE_FRUIT_JAM
+    DEVICE = FRUIT_JAM
 
     import os
     import supervisor
@@ -43,7 +43,7 @@ else:
 # CONSTANTS
 # =============================================================================
 
-if DEVICE is DEVICE_FRUIT_JAM:
+if DEVICE is FRUIT_JAM:
     # get user display width
     if (SCREEN_WIDTH := os.getenv("CIRCUITPY_DISPLAY_WIDTH")) is not None:
         SCREEN_HEIGHT = next((h for w, h in adafruit_fruitjam.peripherals.VALID_DISPLAY_SIZES if SCREEN_WIDTH == w))
@@ -205,7 +205,7 @@ BUTTON_1.switch_to_input(pull=Pull.UP)
 # SOUND SETUP
 # =============================================================================
 
-if DEVICE is DEVICE_FRUIT_JAM:
+if DEVICE is FRUIT_JAM:
     peripherals = adafruit_fruitjam.peripherals.Peripherals(
         safe_volume_limit=(config.audio_volume_override_danger if config is not None else 0.75),
     )
@@ -234,7 +234,7 @@ WAKA_FREQ_2 = 392  # G4
 waka_toggle = False
 
 def play_sound(freq:int):
-    if DEVICE is DEVICE_FRUIT_JAM:
+    if DEVICE is FRUIT_JAM:
         synth.release_all_then_press(synthio.Note(frequency=freq))
     elif buzzer is not None:
         buzzer.frequency = freq
@@ -242,7 +242,7 @@ def play_sound(freq:int):
 
 def stop_sound():
     """Stop any sound."""
-    if DEVICE is DEVICE_FRUIT_JAM:
+    if DEVICE is FRUIT_JAM:
         synth.release_all()
     elif buzzer is not None:
         buzzer.duty_cycle = 0
