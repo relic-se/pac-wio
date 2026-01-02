@@ -1,3 +1,5 @@
+> As of 2026-01-02, this repository has been archived and development has been moved to [RetiredWizard/pac-fruitjam](https://github.com/RetiredWizard/pac-fruitjam).
+
 # 🕹️ Pac-Man Clone for Seeed Wio Terminal and Adafruit Fruit Jam
 
 A pixel-perfect Pac-Man clone built for the **Seeed Wio Terminal** and **Adafruit Fruit Jam** using **CircuitPython 10**.
